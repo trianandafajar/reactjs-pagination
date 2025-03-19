@@ -1,11 +1,7 @@
 import PersonalList from "./components/PersonalList.jsx";
 
 function App() {
-  return (
-    <>
-      <PersonalList />
-    </>
-  );
+  return <PersonalList />;
 }
 
 export default App;
