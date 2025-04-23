@@ -1,50 +1,56 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ReactPaginate from "react-paginate";
 
+const LIMIT = 10;
+
 const PersonalList = () => {
-  const [personals, setPersonals] = useState([]);
+  const [data, setData] = useState({
+    personals: [],
+    pages: 0,
+    rows: 0,
+  });
   const [page, setPage] = useState(0);
-  const [limit] = useState(10); // Limit is constant, no need to be in state
-  const [pages, setPages] = useState(0);
-  const [rows, setRows] = useState(0);
-  const [keyword, setKeyword] = useState("");
   const [query, setQuery] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [msg, setMsg] = useState("");
 
-  const getPersonals = async () => {
+  const fetchPersonals = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `/api/personals?search=${keyword}&limit=${limit}&page=${page}`
+      const { data: res } = await axios.get(
+        `/api/personals?search=${keyword}&limit=${LIMIT}&page=${page}`
       );
-      setPersonals(response.data.result);
-      setPages(response.data.totalPages);
-      setRows(response.data.totalRows);
-      setMsg(response.data.totalRows === 0 ? "Tidak ditemukan? Gunakan search box" : "");
-    } catch (error) {
-      console.error("Error fetching data", error);
+      setData({
+        personals: res.result,
+        pages: res.totalPages,
+        rows: res.totalRows,
+      });
+      setMsg(res.totalRows === 0 ? "Tidak ditemukan? Gunakan search box" : "");
+    } catch (err) {
+      console.error(err);
       setMsg("Error fetching data");
     }
-  };
-
-  useEffect(() => {
-    getPersonals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, page]);
 
-  const pageChange = ({ selected }) => setPage(selected);
+  useEffect(() => {
+    fetchPersonals();
+  }, [fetchPersonals]);
 
-  const searchData = (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
     setPage(0);
     setKeyword(query);
   };
 
+  const handlePageChange = ({ selected }) => setPage(selected);
+
+  const { personals, pages, rows } = data;
+
   return (
     <div className="container mt-5">
       <div className="columns">
         <div className="column is-centered">
-          <form onSubmit={searchData}>
+          <form onSubmit={handleSearch}>
             <div className="field has-addons">
               <div className="control is-expanded">
                 <input
@@ -62,6 +68,7 @@ const PersonalList = () => {
               </div>
             </div>
           </form>
+
           <table className="table is-striped is-bordered is-fullwidth mt-2">
             <thead>
               <tr>
@@ -74,38 +81,36 @@ const PersonalList = () => {
               </tr>
             </thead>
             <tbody>
-              {personals.map((personal) => (
-                <tr key={personal.id}>
-                  <td>{personal.id}</td>
-                  <td>{personal.first_name}</td>
-                  <td>{personal.last_name}</td>
-                  <td>{personal.email}</td>
-                  <td>{personal.gender}</td>
-                  <td>{personal.ip_address}</td>
+              {personals.map(({ id, first_name, last_name, email, gender, ip_address }) => (
+                <tr key={id}>
+                  <td>{id}</td>
+                  <td>{first_name}</td>
+                  <td>{last_name}</td>
+                  <td>{email}</td>
+                  <td>{gender}</td>
+                  <td>{ip_address}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
           <p>
-            Total Rows: {rows.toLocaleString("en-US")} Page: {page + 1} of {pages.toLocaleString("en-US")}
+            Total Rows: {rows.toLocaleString()} Page: {page + 1} of {pages.toLocaleString()}
           </p>
           <p className="has-text-danger has-text-right">{msg}</p>
-          <nav
-            className="pagination is-right is-rounded"
-            role="navigation"
-            aria-label="pagination"
-          >
+
+          <nav className="pagination is-right is-rounded" role="navigation" aria-label="pagination">
             <ReactPaginate
-              previousLabel={"Prev"}
-              nextLabel={"Next"}
+              previousLabel="Prev"
+              nextLabel="Next"
               pageCount={pages}
-              onPageChange={pageChange}
-              containerClassName={"pagination-list"}
-              pageLinkClassName={"pagination-link"}
-              previousLinkClassName={"pagination-previous"}
-              nextLinkClassName={"pagination-next"}
-              activeLinkClassName={"pagination-link is-current"}
-              disabledLinkClassName={"pagination-link is-disabled"}
+              onPageChange={handlePageChange}
+              containerClassName="pagination-list"
+              pageLinkClassName="pagination-link"
+              previousLinkClassName="pagination-previous"
+              nextLinkClassName="pagination-next"
+              activeLinkClassName="pagination-link is-current"
+              disabledLinkClassName="pagination-link is-disabled"
             />
           </nav>
         </div>
